@@ -9,13 +9,17 @@
 package com.mycontact.user.model;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
+import com.mycontact.contact.model.Contact;
 import com.mycontact.user.builder.UserBuilder;
 
 public abstract class User {
     private String email;
     private String passwordHash;
     private String name;
+    private List<Contact> contacts;
 
     // Regex pattern for email validation
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
@@ -30,6 +34,7 @@ public abstract class User {
         this.email = builder.getEmail();
         this.passwordHash = builder.getPasswordHash();
         this.name = builder.getName();
+        this.contacts = new ArrayList<>();
     }
 
     /**
@@ -101,5 +106,50 @@ public abstract class User {
             throw new IllegalArgumentException("Name cannot be null or empty");
         }
         this.name = name;
+    }
+
+    /**
+     * Gets the list of contacts.
+     * @return a defensive copy of the contacts list
+     */
+    public List<Contact> getContacts() {
+        return new ArrayList<>(contacts);
+    }
+
+    /**
+     * Adds a contact to the user's contact list.
+     * @param contact the contact to add
+     */
+    public void addContact(Contact contact) {
+        if (contact != null) {
+            this.contacts.add(contact);
+        }
+    }
+
+    /**
+     * Removes a contact from the user's contact list.
+     * @param contact the contact to remove
+     */
+    public void removeContact(Contact contact) {
+        this.contacts.remove(contact);
+    }
+
+    /**
+     * Displays all contacts.
+     */
+    public void viewContacts() {
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("\n\t Your Contacts -----");
+        for (int i = 0; i < contacts.size(); i++) {
+            Contact c = contacts.get(i);
+            System.out.println((i + 1) + ". Name: " + c.getName());
+            System.out.println("   Phones: " + c.getPhoneNumbers());
+            System.out.println("   Emails: " + c.getEmails());
+            System.out.println();
+        }
     }
 }

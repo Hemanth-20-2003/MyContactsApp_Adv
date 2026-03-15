@@ -2,23 +2,26 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 03: User Profile Management
+ * * Use Case 04: Create Contact
  * * Description:
- * This class demonstrates user profile management by allowing logged-in
- * users to update profile information, change password, or manage preferences
- * using OOP concepts, Command Pattern, and Java features.
+ * This class demonstrates contact creation by allowing logged-in users to add
+ * new contacts with name, phone numbers, email addresses, and optional fields
+ * using OOP concepts, design patterns, and Java features.
  * * At this stage, the application:
- * - Allows logged-in users to edit name, email, and password
- * - Uses Command Pattern for update operations with undo capability
- * - Validates input using encapsulated methods
- * - Follows JavaBeans conventions for setters
- * - Implements security best practices for password updates
- * - Provides feedback on update success or failure
- * * This maps User class with setter methods, validation encapsulated in methods,
- * Command Pattern for profile update operations, JavaBeans conventions,
- * data validation, and security best practices.
+ * - Allows logged-in users to create Person or Organization contacts
+ * - Uses Builder Pattern for Contact construction
+ * - Uses Factory Pattern for creating contact types
+ * - Supports multiple phone numbers and emails per contact
+ * - Assigns unique UUID and timestamps to contacts
+ * - Validates input for names, phones, and emails
+ * - Stores contacts in user's contact list
+ * - Provides feedback on contact creation
+ * * This maps Contact class hierarchy (Person, Organization), composition
+ * (Contact has PhoneNumber, Email objects), Builder Pattern for Contact construction,
+ * Factory for creating contact types, Collections (List for multiple phones/emails),
+ * LocalDateTime for timestamps, UUID for unique IDs.
  * * @author Developer
- * @version 3.0
+ * @version 4.0
  */
 
 package com.main;
@@ -30,6 +33,10 @@ import java.util.Scanner;
 import com.mycontact.auth.Authentication;
 import com.mycontact.auth.session.SessionManager;
 import com.mycontact.auth.strategy.BasicAuth;
+import com.mycontact.contact.factory.ContactFactory;
+import com.mycontact.contact.model.Contact;
+import com.mycontact.contact.model.Email;
+import com.mycontact.contact.model.PhoneNumber;
 import com.mycontact.user.command.Command;
 import com.mycontact.user.command.RemoteControl;
 import com.mycontact.user.command.UpdateEmailCommand;
@@ -126,7 +133,8 @@ public class MyContactsApp {
     private static void showLoggedInMenu(Scanner scanner) {
         System.out.println("\n1. View Profile");
         System.out.println("2. Edit Profile");
-        System.out.println("3. Logout");
+        System.out.println("3. Manage Contacts");
+        System.out.println("4. Logout");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -139,6 +147,9 @@ public class MyContactsApp {
                 editProfile(scanner);
                 break;
             case 3:
+                manageContacts(scanner);
+                break;
+            case 4:
                 SessionManager.getInstance().endSession();
                 System.out.println("Logged out successfully.");
                 break;
@@ -188,6 +199,72 @@ public class MyContactsApp {
                 break;
             default:
                 System.out.println("Invalid option.");
+        }
+    }
+
+    private static void manageContacts(Scanner scanner) {
+        User user = SessionManager.getInstance().getLoggedInUser();
+
+        System.out.println("\n--- Manage Contacts ---");
+        System.out.println("1. View Contacts");
+        System.out.println("2. Add Contact");
+        System.out.print("Choose an option: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        switch (choice) {
+            case 1:
+                user.viewContacts();
+                break;
+            case 2:
+                addContact(scanner, user);
+                break;
+            default:
+                System.out.println("Invalid option.");
+        }
+    }
+
+    private static void addContact(Scanner scanner, User user) {
+        try {
+            System.out.print("Enter contact name: ");
+            String name = scanner.nextLine();
+
+            System.out.print("Enter contact type (PERSON or ORGANIZATION): ");
+            String type = scanner.nextLine();
+
+            Contact contact = ContactFactory.createContact(type, name);
+
+            // Add phone numbers
+            System.out.print("How many phone numbers to add? ");
+            int phoneCount = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            for (int i = 0; i < phoneCount; i++) {
+                System.out.print("Enter phone number " + (i + 1) + ": ");
+                String phone = scanner.nextLine();
+                System.out.print("Enter label (e.g., Home, Work): ");
+                String label = scanner.nextLine();
+                PhoneNumber phoneNumber = new PhoneNumber(phone, label);
+                contact.addPhoneNumber(phoneNumber);
+            }
+
+            // Add emails
+            System.out.print("How many emails to add? ");
+            int emailCount = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+            for (int i = 0; i < emailCount; i++) {
+                System.out.print("Enter email " + (i + 1) + ": ");
+                String email = scanner.nextLine();
+                System.out.print("Enter label (e.g., Personal, Work): ");
+                String label = scanner.nextLine();
+                Email emailObj = new Email(email, label);
+                contact.addEmail(emailObj);
+            }
+
+            user.addContact(contact);
+            System.out.println("Contact added successfully!");
+
+        } catch (Exception e) {
+            System.out.println("Failed to add contact: " + e.getMessage());
         }
     }
 }
