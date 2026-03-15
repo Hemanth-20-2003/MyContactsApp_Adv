@@ -13,6 +13,14 @@ import com.mycontact.user.model.PremiumUser;
 import com.mycontact.user.model.User;
 
 public class UserFactory {
+    /**
+     * Creates a User object based on the specified type.
+     * @param type the type of user ("FREE" or "PREMIUM")
+     * @param builder the UserBuilder containing user data
+     * @return the created User object
+     * @throws IllegalArgumentException if type is invalid or validation fails
+     * @throws NoSuchAlgorithmException if password hashing fails
+     */
     public static User createUser(String type, UserBuilder builder) throws IllegalArgumentException, NoSuchAlgorithmException {
         if ("FREE".equalsIgnoreCase(type)) {
             return new FreeUser(builder);
