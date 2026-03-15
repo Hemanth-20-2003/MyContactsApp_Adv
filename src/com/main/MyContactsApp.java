@@ -2,30 +2,23 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 01: User Registration
+ * * Use Case 03: User Profile Management
  * * Description:
- * This class demonstrates user registration functionality by creating
- * an account with email, password, and profile information using OOP
- * concepts, design patterns, and Java features.
- * * Use Case 02: User Authentication
- * * Description:
- * This class demonstrates user authentication by logging in with
- * credentials to access their contact list using polymorphism,
- * Strategy Pattern, Singleton, and Java features.
+ * This class demonstrates user profile management by allowing logged-in
+ * users to update profile information, change password, or manage preferences
+ * using OOP concepts, Command Pattern, and Java features.
  * * At this stage, the application:
- * - Collects user input for registration and login
- * - Validates input and handles exceptions
- * - Creates user objects using Factory and Builder patterns
- * - Authenticates users using Strategy Pattern with BasicAuth
- * - Manages sessions using Singleton SessionManager
- * - Uses Optional for handling login results
- * - Provides feedback on operations
- * * This maps encapsulation, validation logic, password hashing,
- * Factory Pattern, Builder Pattern, Strategy Pattern, Singleton,
- * input validation, exception handling, regular expressions,
- * session management, and Optional for results.
+ * - Allows logged-in users to edit name, email, and password
+ * - Uses Command Pattern for update operations with undo capability
+ * - Validates input using encapsulated methods
+ * - Follows JavaBeans conventions for setters
+ * - Implements security best practices for password updates
+ * - Provides feedback on update success or failure
+ * * This maps User class with setter methods, validation encapsulated in methods,
+ * Command Pattern for profile update operations, JavaBeans conventions,
+ * data validation, and security best practices.
  * * @author Developer
- * @version 2.0
+ * @version 3.0
  */
 
 package com.main;
@@ -37,6 +30,11 @@ import java.util.Scanner;
 import com.mycontact.auth.Authentication;
 import com.mycontact.auth.session.SessionManager;
 import com.mycontact.auth.strategy.BasicAuth;
+import com.mycontact.user.command.Command;
+import com.mycontact.user.command.RemoteControl;
+import com.mycontact.user.command.UpdateEmailCommand;
+import com.mycontact.user.command.UpdateNameCommand;
+import com.mycontact.user.command.UpdatePasswordCommand;
 import com.mycontact.user.model.User;
 import com.mycontact.user.service.UserService;
 
@@ -127,7 +125,8 @@ public class MyContactsApp {
 
     private static void showLoggedInMenu(Scanner scanner) {
         System.out.println("\n1. View Profile");
-        System.out.println("2. Logout");
+        System.out.println("2. Edit Profile");
+        System.out.println("3. Logout");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -137,6 +136,9 @@ public class MyContactsApp {
                 viewProfile();
                 break;
             case 2:
+                editProfile(scanner);
+                break;
+            case 3:
                 SessionManager.getInstance().endSession();
                 System.out.println("Logged out successfully.");
                 break;
@@ -151,5 +153,41 @@ public class MyContactsApp {
         System.out.println("Name: " + user.getName());
         System.out.println("Email: " + user.getEmail());
         System.out.println("User Type: " + (user instanceof com.mycontact.user.model.FreeUser ? "Free" : "Premium"));
+    }
+
+    private static void editProfile(Scanner scanner) {
+        User user = SessionManager.getInstance().getLoggedInUser();
+        RemoteControl remote = new RemoteControl();
+
+        System.out.println("\n--- Edit Profile ---");
+        System.out.println("1. Edit Name");
+        System.out.println("2. Edit Email");
+        System.out.println("3. Change Password");
+        System.out.print("Choose an option: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        switch (choice) {
+            case 1:
+                System.out.print("Enter new name: ");
+                String newName = scanner.nextLine();
+                Command nameCommand = new UpdateNameCommand(user, newName);
+                remote.execute(nameCommand);
+                break;
+            case 2:
+                System.out.print("Enter new email: ");
+                String newEmail = scanner.nextLine();
+                Command emailCommand = new UpdateEmailCommand(user, newEmail);
+                remote.execute(emailCommand);
+                break;
+            case 3:
+                System.out.print("Enter new password: ");
+                String newPassword = scanner.nextLine();
+                Command passwordCommand = new UpdatePasswordCommand(user, newPassword);
+                remote.execute(passwordCommand);
+                break;
+            default:
+                System.out.println("Invalid option.");
+        }
     }
 }
