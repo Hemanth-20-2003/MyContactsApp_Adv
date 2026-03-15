@@ -2,26 +2,23 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 04: Create Contact
+ * * Use Case 05: View Contact Details
  * * Description:
- * This class demonstrates contact creation by allowing logged-in users to add
- * new contacts with name, phone numbers, email addresses, and optional fields
- * using OOP concepts, design patterns, and Java features.
+ * This class demonstrates viewing contact details by allowing logged-in users
+ * to view complete information of a specific contact using OOP concepts,
+ * Decorator Pattern, and Java features.
  * * At this stage, the application:
- * - Allows logged-in users to create Person or Organization contacts
- * - Uses Builder Pattern for Contact construction
- * - Uses Factory Pattern for creating contact types
- * - Supports multiple phone numbers and emails per contact
- * - Assigns unique UUID and timestamps to contacts
- * - Validates input for names, phones, and emails
- * - Stores contacts in user's contact list
- * - Provides feedback on contact creation
- * * This maps Contact class hierarchy (Person, Organization), composition
- * (Contact has PhoneNumber, Email objects), Builder Pattern for Contact construction,
- * Factory for creating contact types, Collections (List for multiple phones/emails),
- * LocalDateTime for timestamps, UUID for unique IDs.
+ * - Allows logged-in users to select and view detailed contact information
+ * - Uses Decorator Pattern for adding display formatters
+ * - Provides formatted display with String formatting
+ * - Uses immutable ContactView objects for read-only access
+ * - Handles nullable fields gracefully
+ * - Provides user-friendly contact selection
+ * * This maps Getter methods, toString() override for display formatting,
+ * Decorator Pattern for adding display formatters, String formatting,
+ * Optional for nullable fields, immutable view objects.
  * * @author Developer
- * @version 4.0
+ * @version 5.0
  */
 
 package com.main;
@@ -35,6 +32,7 @@ import com.mycontact.auth.session.SessionManager;
 import com.mycontact.auth.strategy.BasicAuth;
 import com.mycontact.contact.factory.ContactFactory;
 import com.mycontact.contact.model.Contact;
+import com.mycontact.contact.model.ContactView;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
 import com.mycontact.user.command.Command;
@@ -44,6 +42,7 @@ import com.mycontact.user.command.UpdateNameCommand;
 import com.mycontact.user.command.UpdatePasswordCommand;
 import com.mycontact.user.model.User;
 import com.mycontact.user.service.UserService;
+import java.util.List;
 
 public class MyContactsApp {
     private static Map<String, User> userDatabase = new HashMap<>();
@@ -206,8 +205,9 @@ public class MyContactsApp {
         User user = SessionManager.getInstance().getLoggedInUser();
 
         System.out.println("\n--- Manage Contacts ---");
-        System.out.println("1. View Contacts");
-        System.out.println("2. Add Contact");
+        System.out.println("1. View All Contacts");
+        System.out.println("2. View Contact Details");
+        System.out.println("3. Add Contact");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -217,10 +217,41 @@ public class MyContactsApp {
                 user.viewContacts();
                 break;
             case 2:
+                viewContactDetails(scanner, user);
+                break;
+            case 3:
                 addContact(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
+        }
+    }
+
+    private static void viewContactDetails(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("Select a contact to view details:");
+        for (int i = 0; i < contacts.size(); i++) {
+            System.out.println((i + 1) + ". " + contacts.get(i).getName());
+        }
+        System.out.print("Enter contact number: ");
+        int index = scanner.nextInt() - 1;
+        scanner.nextLine(); // consume newline
+
+        if (index >= 0 && index < contacts.size()) {
+            Contact selectedContact = contacts.get(index);
+            ContactView contactView = new ContactView(selectedContact);
+
+            // Use Decorator for display
+            com.mycontact.contact.decorator.DetailedContactDisplay display =
+                new com.mycontact.contact.decorator.DetailedContactDisplay(selectedContact);
+            System.out.println(display.display());
+        } else {
+            System.out.println("Invalid contact number.");
         }
     }
 
