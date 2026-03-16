@@ -1,13 +1,17 @@
 package com.mycontact.contact.tag;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Represents a tag used to categorize contacts.
  * Includes validation and implements equals/hashCode for Set usage.
+ * Maintains bidirectional relationship with contacts via associations.
  */
 public final class Tag {
     private final String name;
+    private final Set<ContactTagAssociation> associations = new HashSet<>();
 
     public Tag(String name) {
         this.name = name;
@@ -22,6 +26,18 @@ public final class Tag {
 
     public String getName() {
         return name;
+    }
+
+    public Set<ContactTagAssociation> getAssociations() {
+        return associations;
+    }
+
+    public void addAssociation(ContactTagAssociation association) {
+        associations.add(association);
+    }
+
+    public void removeAssociation(ContactTagAssociation association) {
+        associations.remove(association);
     }
 
     @Override

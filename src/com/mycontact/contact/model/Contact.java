@@ -8,21 +8,25 @@ import java.util.Set;
 import java.util.UUID;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
+import com.mycontact.contact.observer.TagChangeObserver;
+import com.mycontact.contact.tag.ContactTagAssociation;
 import com.mycontact.contact.tag.Tag;
 
 /**
  * Abstract base class for contacts.
  * Uses composition for phone numbers and emails.
  * Includes unique ID and timestamp.
+ * Manages bidirectional tag relationships via associations.
  */
 public abstract class Contact {
     private UUID id;
     private String name;
     private List<PhoneNumber> phoneNumbers;
     private List<Email> emails;
-    private Set<Tag> tags;
+    private Set<ContactTagAssociation> tagAssociations;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<TagChangeObserver> tagObservers = new ArrayList<>();
 
     protected Contact(String name) throws IllegalArgumentException {
         if (name == null || name.trim().isEmpty()) {
@@ -32,7 +36,7 @@ public abstract class Contact {
         this.name = name;
         this.phoneNumbers = new ArrayList<>();
         this.emails = new ArrayList<>();
-        this.tags = new HashSet<>();
+        this.tagAssociations = new HashSet<>();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -51,7 +55,7 @@ public abstract class Contact {
         other.phoneNumbers.forEach(phone -> this.phoneNumbers.add(new PhoneNumber(phone.getNumber(), phone.getLabel())));
         this.emails = new ArrayList<>();
         other.emails.forEach(email -> this.emails.add(new Email(email.getAddress(), email.getLabel())));
-        this.tags = new HashSet<>(other.tags);
+        this.tagAssociations = new HashSet<>(other.tagAssociations);
     }
 
     /**
@@ -71,7 +75,7 @@ public abstract class Contact {
         this.name = snapshot.name;
         this.phoneNumbers = snapshot.phoneNumbers;
         this.emails = snapshot.emails;
-        this.tags = snapshot.tags;
+        this.tagAssociations = snapshot.tagAssociations;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -142,24 +146,57 @@ public abstract class Contact {
     }
 
     public Set<Tag> getTags() {
-        return new HashSet<>(tags); // Defensive copy
+        return tagAssociations.stream().map(ContactTagAssociation::getTag).collect(java.util.stream.Collectors.toSet());
     }
 
     public void addTag(Tag tag) {
-        if (tag != null) {
-            this.tags.add(tag);
+        if (tag != null && !hasTag(tag)) {
+            ContactTagAssociation association = new ContactTagAssociation(this, tag);
+            this.tagAssociations.add(association);
+            tag.addAssociation(association);
             this.updatedAt = LocalDateTime.now();
+            notifyTagAdded(tag);
         }
     }
 
     public void removeTag(Tag tag) {
-        this.tags.remove(tag);
-        this.updatedAt = LocalDateTime.now();
+        if (tag != null) {
+            ContactTagAssociation association = tagAssociations.stream()
+                .filter(a -> a.getTag().equals(tag))
+                .findFirst().orElse(null);
+            if (association != null) {
+                this.tagAssociations.remove(association);
+                tag.removeAssociation(association);
+                this.updatedAt = LocalDateTime.now();
+                notifyTagRemoved(tag);
+            }
+        }
+    }
+
+    public boolean hasTag(Tag tag) {
+        return tagAssociations.stream().anyMatch(a -> a.getTag().equals(tag));
     }
 
     public void clearTags() {
-        this.tags.clear();
+        tagAssociations.forEach(a -> a.getTag().removeAssociation(a));
+        tagAssociations.clear();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void addTagChangeObserver(TagChangeObserver observer) {
+        tagObservers.add(observer);
+    }
+
+    public void removeTagChangeObserver(TagChangeObserver observer) {
+        tagObservers.remove(observer);
+    }
+
+    private void notifyTagAdded(Tag tag) {
+        tagObservers.forEach(o -> o.onTagAdded(this, tag));
+    }
+
+    private void notifyTagRemoved(Tag tag) {
+        tagObservers.forEach(o -> o.onTagRemoved(this, tag));
     }
 
     public LocalDateTime getCreatedAt() {
@@ -181,7 +218,7 @@ public abstract class Contact {
         sb.append("Name: ").append(name).append("\n");
         sb.append("Phones: ").append(phoneNumbers).append("\n");
         sb.append("Emails: ").append(emails).append("\n");
-        sb.append("Tags: ").append(tags).append("\n");
+        sb.append("Tags: ").append(getTags()).append("\n");
         sb.append("Created: ").append(createdAt).append("\n");
         sb.append("Updated: ").append(updatedAt);
         return sb.toString();

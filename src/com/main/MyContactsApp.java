@@ -2,25 +2,22 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 11: Create and Manage Tags
+ * * Use Case 12: Apply Tags to Contacts
  * * Description:
- * This class demonstrates viewing, editing, deleting, searching, filtering,
- * and tagging contact details for logged-in users using OOP concepts, design
- * patterns, and Java features.
+ * This class demonstrates applying tags to contacts for logged-in users using
+ * OOP concepts, design patterns, and Java features.
  * * At this stage, the application:
- * - Allows logged-in users to select and view detailed contact information
- * - Uses Decorator Pattern for display formatting
- * - Uses immutable ContactView objects for read-only access
- * - Supports bulk operations (batch delete, export) using streams and predicates
- * - Supports advanced filtering (tag, date added, frequently contacted)
- * - Provides tag creation and management with unique tag instances
- * - Validates input before updating or deleting contact state
- * * This maps Getter methods, toString() override for display formatting,
- * Decorator Pattern, String formatting, Optional for nullable fields,
- * immutable view objects, Command Pattern, Memento Pattern, Observer Pattern,
- * Streams API, functional filtering, and Flyweight Pattern for tags.
+ * - Allows logged-in users to assign or remove tags from contacts
+ * - Uses Association class for Contact-Tag relationships with bidirectional management
+ * - Uses Observer Pattern to notify UI updates when tags change
+ * - Uses Set operations for efficient tag add/remove
+ * - Supports predefined tags and custom tags
+ * - Validates input before updating contact tags
+ * * This maps Association class, Observer Pattern, Set operations,
+ * bidirectional relationship management, Streams API, functional filtering,
+ * and Flyweight Pattern for tags.
  * * @author Developer
- * @version 11.0
+ * @version 12.0
  */
 
 package com.main;
@@ -48,6 +45,7 @@ import com.mycontact.contact.model.ContactView;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
 import com.mycontact.contact.observer.ContactDeletionObserver;
+import com.mycontact.contact.observer.TagChangeObserver;
 import com.mycontact.contact.filter.DateAddedFilter;
 import com.mycontact.contact.filter.Filter;
 import com.mycontact.contact.filter.FrequentContactFilter;
@@ -59,6 +57,8 @@ import com.mycontact.contact.search.PhoneCriteria;
 import com.mycontact.contact.search.SearchCriteria;
 import com.mycontact.contact.search.TagCriteria;
 import com.mycontact.contact.command.UpdateContactNameCommand;
+import com.mycontact.contact.tag.PredefinedTags;
+import com.mycontact.contact.tag.Tag;
 import com.mycontact.user.command.Command;
 import com.mycontact.user.command.RemoteControl;
 import com.mycontact.user.command.UpdateEmailCommand;
@@ -236,6 +236,7 @@ public class MyContactsApp {
         System.out.println("6. Bulk Operations");
         System.out.println("7. Search Contacts");
         System.out.println("8. Advanced Filtering");
+        System.out.println("9. Apply Tags to Contacts");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -264,6 +265,9 @@ public class MyContactsApp {
                 break;
             case 8:
                 advancedFiltering(scanner, user);
+                break;
+            case 9:
+                applyTagsToContacts(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -643,6 +647,78 @@ public class MyContactsApp {
 
         } catch (Exception e) {
             System.out.println("Failed to add contact: " + e.getMessage());
+        }
+    }
+
+    private static void applyTagsToContacts(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("Select a contact to manage tags:");
+        for (int i = 0; i < contacts.size(); i++) {
+            System.out.println((i + 1) + ". " + contacts.get(i).getName());
+        }
+        System.out.print("Enter contact number: ");
+        int index = scanner.nextInt() - 1;
+        scanner.nextLine(); // consume newline
+
+        if (index < 0 || index >= contacts.size()) {
+            System.out.println("Invalid contact number.");
+            return;
+        }
+
+        Contact selected = contacts.get(index);
+
+        // Register observer for tag changes
+        selected.addTagChangeObserver(new TagChangeObserver() {
+            @Override
+            public void onTagAdded(Contact contact, Tag tag) {
+                System.out.println("UI Update: Tag '" + tag.getName() + "' added to " + contact.getName());
+            }
+
+            @Override
+            public void onTagRemoved(Contact contact, Tag tag) {
+                System.out.println("UI Update: Tag '" + tag.getName() + "' removed from " + contact.getName());
+            }
+        });
+
+        while (true) {
+            System.out.println("\n--- Manage Tags for " + selected.getName() + " ---");
+            System.out.println("Current tags: " + selected.getTags());
+            System.out.println("Predefined tags: " + PredefinedTags.all());
+            System.out.println("1. Add a tag");
+            System.out.println("2. Remove a tag");
+            System.out.println("3. Back to main menu");
+            System.out.print("Choose an option: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // consume newline
+
+            if (choice == 1) {
+                System.out.print("Enter tag name: ");
+                String tagName = scanner.nextLine();
+                try {
+                    Tag tag = Tag.of(tagName);
+                    selected.addTag(tag);
+                } catch (Exception e) {
+                    System.out.println("Failed to add tag: " + e.getMessage());
+                }
+            } else if (choice == 2) {
+                System.out.print("Enter tag name to remove: ");
+                String tagName = scanner.nextLine();
+                try {
+                    Tag tag = Tag.of(tagName);
+                    selected.removeTag(tag);
+                } catch (Exception e) {
+                    System.out.println("Failed to remove tag: " + e.getMessage());
+                }
+            } else if (choice == 3) {
+                break;
+            } else {
+                System.out.println("Invalid option.");
+            }
         }
     }
 }
