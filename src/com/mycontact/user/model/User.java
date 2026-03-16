@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import com.mycontact.contact.model.Contact;
+import com.mycontact.contact.observer.ContactDeletionObserver;
 import com.mycontact.user.builder.UserBuilder;
 
 public abstract class User {
@@ -20,7 +21,7 @@ public abstract class User {
     private String passwordHash;
     private String name;
     private List<Contact> contacts;
-
+    private List<ContactDeletionObserver> deletionObservers;
     // Regex pattern for email validation
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
@@ -35,6 +36,7 @@ public abstract class User {
         this.passwordHash = builder.getPasswordHash();
         this.name = builder.getName();
         this.contacts = new ArrayList<>();
+        this.deletionObservers = new ArrayList<>();
     }
 
     /**
@@ -128,10 +130,37 @@ public abstract class User {
 
     /**
      * Removes a contact from the user's contact list.
+     * Notifies registered observers about the deletion.
      * @param contact the contact to remove
      */
     public void removeContact(Contact contact) {
-        this.contacts.remove(contact);
+        if (this.contacts.remove(contact)) {
+            notifyDeletionObservers(contact);
+        }
+    }
+
+    /**
+     * Registers an observer to be notified when a contact is deleted.
+     * @param observer the observer to register
+     */
+    public void addDeletionObserver(ContactDeletionObserver observer) {
+        if (observer != null) {
+            this.deletionObservers.add(observer);
+        }
+    }
+
+    /**
+     * Removes a previously registered deletion observer.
+     * @param observer the observer to remove
+     */
+    public void removeDeletionObserver(ContactDeletionObserver observer) {
+        this.deletionObservers.remove(observer);
+    }
+
+    private void notifyDeletionObservers(Contact contact) {
+        for (ContactDeletionObserver observer : deletionObservers) {
+            observer.onContactDeleted(contact);
+        }
     }
 
     /**

@@ -4,21 +4,23 @@
  * =====================================================================
  * * Use Case 05: View Contact Details
  * * Use Case 06: Edit Contact
+ * * Use Case 07: Delete Contact
  * * Description:
- * This class demonstrates viewing and editing contact details for logged-in
- * users using OOP concepts, design patterns, and Java features.
+ * This class demonstrates viewing, editing, and deleting contact details for
+ * logged-in users using OOP concepts, design patterns, and Java features.
  * * At this stage, the application:
  * - Allows logged-in users to select and view detailed contact information
  * - Uses Decorator Pattern for display formatting
  * - Uses immutable ContactView objects for read-only access
  * - Allows users to edit contact data with undo support
  * - Uses Command Pattern and Memento Pattern for state preservation
- * - Validates input before updating contact state
+ * - Allows users to delete contacts with confirmation and notification
+ * - Validates input before updating or deleting contact state
  * * This maps Getter methods, toString() override for display formatting,
  * Decorator Pattern, String formatting, Optional for nullable fields,
- * immutable view objects, Command Pattern, and Memento Pattern.
+ * immutable view objects, Command Pattern, Memento Pattern, and Observer Pattern.
  * * @author Developer
- * @version 6.0
+ * @version 7.0
  */
 
 package com.main;
@@ -36,6 +38,7 @@ import com.mycontact.contact.model.Contact;
 import com.mycontact.contact.model.ContactView;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
+import com.mycontact.contact.observer.ContactDeletionObserver;
 import com.mycontact.contact.command.UpdateContactNameCommand;
 import com.mycontact.user.command.Command;
 import com.mycontact.user.command.RemoteControl;
@@ -211,6 +214,7 @@ public class MyContactsApp {
         System.out.println("2. View Contact Details");
         System.out.println("3. Add Contact");
         System.out.println("4. Edit Contact");
+        System.out.println("5. Delete Contact");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -227,6 +231,9 @@ public class MyContactsApp {
                 break;
             case 4:
                 editContact(scanner, user);
+                break;
+            case 5:
+                deleteContact(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -308,6 +315,47 @@ public class MyContactsApp {
         } else {
             System.out.println("Invalid option.");
         }
+    }
+
+    private static void deleteContact(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("Select a contact to delete:");
+        for (int i = 0; i < contacts.size(); i++) {
+            System.out.println((i + 1) + ". " + contacts.get(i).getName());
+        }
+        System.out.print("Enter contact number: ");
+        int index = scanner.nextInt() - 1;
+        scanner.nextLine(); // consume newline
+
+        if (index < 0 || index >= contacts.size()) {
+            System.out.println("Invalid contact number.");
+            return;
+        }
+
+        Contact toDelete = contacts.get(index);
+        System.out.print("Are you sure you want to delete '" + toDelete.getName() + "'? (y/n): ");
+        String confirmation = scanner.nextLine();
+
+        if (!confirmation.equalsIgnoreCase("y")) {
+            System.out.println("Delete canceled.");
+            return;
+        }
+
+        // Register a simple observer to notify other components about deletion.
+        user.addDeletionObserver(new ContactDeletionObserver() {
+            @Override
+            public void onContactDeleted(Contact contact) {
+                System.out.println("Observer: Contact '" + contact.getName() + "' was deleted.");
+            }
+        });
+
+        user.removeContact(toDelete);
+        System.out.println("Contact deleted successfully.");
     }
 
     private static void addContact(Scanner scanner, User user) {
