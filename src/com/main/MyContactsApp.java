@@ -5,9 +5,11 @@
  * * Use Case 05: View Contact Details
  * * Use Case 06: Edit Contact
  * * Use Case 07: Delete Contact
+ * * Use Case 08: Bulk Operations
  * * Description:
- * This class demonstrates viewing, editing, and deleting contact details for
- * logged-in users using OOP concepts, design patterns, and Java features.
+ * This class demonstrates viewing, editing, deleting, and performing bulk
+ * operations on contact details for logged-in users using OOP concepts,
+ * design patterns, and Java features.
  * * At this stage, the application:
  * - Allows logged-in users to select and view detailed contact information
  * - Uses Decorator Pattern for display formatting
@@ -15,20 +17,31 @@
  * - Allows users to edit contact data with undo support
  * - Uses Command Pattern and Memento Pattern for state preservation
  * - Allows users to delete contacts with confirmation and notification
+ * - Supports bulk operations (batch delete, export) using streams and predicates
  * - Validates input before updating or deleting contact state
  * * This maps Getter methods, toString() override for display formatting,
  * Decorator Pattern, String formatting, Optional for nullable fields,
- * immutable view objects, Command Pattern, Memento Pattern, and Observer Pattern.
+ * immutable view objects, Command Pattern, Memento Pattern, Observer Pattern,
+ * and Streams API for bulk operations.
  * * @author Developer
- * @version 7.0
+ * @version 8.0
  */
 
 package com.main;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+
 import com.mycontact.auth.Authentication;
 import com.mycontact.auth.session.SessionManager;
 import com.mycontact.auth.strategy.BasicAuth;
@@ -47,7 +60,6 @@ import com.mycontact.user.command.UpdateNameCommand;
 import com.mycontact.user.command.UpdatePasswordCommand;
 import com.mycontact.user.model.User;
 import com.mycontact.user.service.UserService;
-import java.util.List;
 
 public class MyContactsApp {
     private static Map<String, User> userDatabase = new HashMap<>();
@@ -215,6 +227,7 @@ public class MyContactsApp {
         System.out.println("3. Add Contact");
         System.out.println("4. Edit Contact");
         System.out.println("5. Delete Contact");
+        System.out.println("6. Bulk Operations");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -234,6 +247,9 @@ public class MyContactsApp {
                 break;
             case 5:
                 deleteContact(scanner, user);
+                break;
+            case 6:
+                bulkOperations(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -356,6 +372,110 @@ public class MyContactsApp {
 
         user.removeContact(toDelete);
         System.out.println("Contact deleted successfully.");
+    }
+
+    private static void bulkOperations(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("\n--- Bulk Operations ---");
+        System.out.println("1. Delete multiple contacts");
+        System.out.println("2. Tag multiple contacts");
+        System.out.println("3. Export contacts");
+        System.out.print("Choose an option: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        switch (choice) {
+            case 1:
+                bulkDelete(scanner, user, contacts);
+                break;
+            case 2:
+                bulkTag(scanner, user, contacts);
+                break;
+            case 3:
+                bulkExport(scanner, user, contacts);
+                break;
+            default:
+                System.out.println("Invalid option.");
+        }
+    }
+
+    private static void bulkDelete(Scanner scanner, User user, List<Contact> contacts) {
+        System.out.println("Enter contact numbers to delete (comma separated):");
+        String input = scanner.nextLine();
+        List<Contact> toDelete = parseContactSelection(input, contacts);
+
+        if (toDelete.isEmpty()) {
+            System.out.println("No valid contacts selected.");
+            return;
+        }
+
+        System.out.print("Confirm delete " + toDelete.size() + " contact(s)? (y/n): ");
+        String confirm = scanner.nextLine();
+        if (!confirm.equalsIgnoreCase("y")) {
+            System.out.println("Bulk delete cancelled.");
+            return;
+        }
+
+        user.removeContacts(toDelete);
+        System.out.println("Deleted " + toDelete.size() + " contacts.");
+    }
+
+    private static void bulkTag(Scanner scanner, User user, List<Contact> contacts) {
+        System.out.println("Enter contact numbers to tag (comma separated):");
+        String input = scanner.nextLine();
+        List<Contact> toTag = parseContactSelection(input, contacts);
+
+        if (toTag.isEmpty()) {
+            System.out.println("No valid contacts selected.");
+            return;
+        }
+
+        System.out.print("Enter tag to apply: ");
+        String tag = scanner.nextLine();
+        user.tagContacts(toTag, tag);
+        System.out.println("Tagged " + toTag.size() + " contact(s) with '" + tag + "'.");
+    }
+
+    private static void bulkExport(Scanner scanner, User user, List<Contact> contacts) {
+        System.out.println("Enter contact numbers to export (comma separated) or press Enter for all:");
+        String input = scanner.nextLine();
+        List<Contact> toExport = input.trim().isEmpty() ? contacts : parseContactSelection(input, contacts);
+
+        String exportText = user.exportContacts(toExport);
+        System.out.println("\n--- Export Output ---\n" + exportText);
+
+        System.out.print("Save export to file? (y/n): ");
+        String save = scanner.nextLine();
+        if (save.equalsIgnoreCase("y")) {
+            String fileName = "contacts_export_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".txt";
+            try {
+                Files.writeString(Path.of(fileName), exportText, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                System.out.println("Export saved to " + fileName);
+            } catch (IOException e) {
+                System.out.println("Failed to save export: " + e.getMessage());
+            }
+        }
+    }
+
+    private static List<Contact> parseContactSelection(String input, List<Contact> contacts) {
+        return java.util.Arrays.stream(input.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(s -> {
+                try {
+                    int idx = Integer.parseInt(s) - 1;
+                    return (idx >= 0 && idx < contacts.size()) ? contacts.get(idx) : null;
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            })
+            .filter(c -> c != null)
+            .collect(Collectors.toList());
     }
 
     private static void addContact(Scanner scanner, User user) {

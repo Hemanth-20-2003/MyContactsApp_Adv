@@ -17,6 +17,7 @@ public abstract class Contact {
     private String name;
     private List<PhoneNumber> phoneNumbers;
     private List<Email> emails;
+    private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -28,6 +29,7 @@ public abstract class Contact {
         this.name = name;
         this.phoneNumbers = new ArrayList<>();
         this.emails = new ArrayList<>();
+        this.tags = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -46,6 +48,7 @@ public abstract class Contact {
         other.phoneNumbers.forEach(phone -> this.phoneNumbers.add(new PhoneNumber(phone.getNumber(), phone.getLabel())));
         this.emails = new ArrayList<>();
         other.emails.forEach(email -> this.emails.add(new Email(email.getAddress(), email.getLabel())));
+        this.tags = new ArrayList<>(other.tags);
     }
 
     /**
@@ -65,6 +68,7 @@ public abstract class Contact {
         this.name = snapshot.name;
         this.phoneNumbers = snapshot.phoneNumbers;
         this.emails = snapshot.emails;
+        this.tags = snapshot.tags;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -134,9 +138,38 @@ public abstract class Contact {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public List<String> getTags() {
+        return new ArrayList<>(tags); // Defensive copy
+    }
+
+    public void addTag(String tag) {
+        if (tag != null && !tag.trim().isEmpty()) {
+            this.tags.add(tag);
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    public void removeTag(String tag) {
+        this.tags.remove(tag);
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    
+
+   
+
+    public void clearTags() {
+        this.tags.clear();
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+
+  
+   
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
@@ -149,6 +182,7 @@ public abstract class Contact {
         sb.append("Name: ").append(name).append("\n");
         sb.append("Phones: ").append(phoneNumbers).append("\n");
         sb.append("Emails: ").append(emails).append("\n");
+        sb.append("Tags: ").append(tags).append("\n");
         sb.append("Created: ").append(createdAt).append("\n");
         sb.append("Updated: ").append(updatedAt);
         return sb.toString();

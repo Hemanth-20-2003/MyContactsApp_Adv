@@ -178,7 +178,44 @@ public abstract class User {
             System.out.println((i + 1) + ". Name: " + c.getName());
             System.out.println("   Phones: " + c.getPhoneNumbers());
             System.out.println("   Emails: " + c.getEmails());
+            System.out.println("   Tags: " + c.getTags());
             System.out.println();
         }
     }
+
+    /**
+     * Removes multiple contacts in bulk.
+     * @param contactsToRemove list of contacts to remove
+     */
+    public void removeContacts(List<Contact> contactsToRemove) {
+        this.contacts.removeAll(contactsToRemove);
+        // Notify observers for each removed contact
+        contactsToRemove.forEach(this::notifyDeletionObservers);
+    }
+
+    /**
+     * Tags a set of contacts with a given label.
+     * @param contactsToTag list of contacts to tag
+     * @param tag the tag to apply
+     */
+    public void tagContacts(List<Contact> contactsToTag, String tag) {
+        if (tag == null || tag.trim().isEmpty()) {
+            return;
+        }
+        contactsToTag.forEach(contact -> contact.addTag(tag));
+    }
+
+    /**
+     * Exports the provided contacts to a plain-text representation.
+     * @param contactsToExport contacts to export
+     * @return a formatted string representation
+     */
+    public String exportContacts(List<Contact> contactsToExport) {
+        StringBuilder sb = new StringBuilder();
+        contactsToExport.stream().forEach(contact -> {
+            sb.append(contact.toString()).append("\n---\n");
+        });
+        return sb.toString();
+    }
 }
+
