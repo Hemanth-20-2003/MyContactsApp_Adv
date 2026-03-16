@@ -2,10 +2,8 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 05: View Contact Details
- * * Use Case 06: Edit Contact
- * * Use Case 07: Delete Contact
- * * Use Case 08: Bulk Operations
+ * * Use Case 09:  Search Contacts
+
  * * Description:
  * This class demonstrates viewing, editing, deleting, and performing bulk
  * operations on contact details for logged-in users using OOP concepts,
@@ -24,7 +22,7 @@
  * immutable view objects, Command Pattern, Memento Pattern, Observer Pattern,
  * and Streams API for bulk operations.
  * * @author Developer
- * @version 8.0
+ * @version 9.0
  */
 
 package com.main;
@@ -52,6 +50,12 @@ import com.mycontact.contact.model.ContactView;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
 import com.mycontact.contact.observer.ContactDeletionObserver;
+import com.mycontact.contact.search.ContactSearchService;
+import com.mycontact.contact.search.EmailCriteria;
+import com.mycontact.contact.search.NameCriteria;
+import com.mycontact.contact.search.PhoneCriteria;
+import com.mycontact.contact.search.SearchCriteria;
+import com.mycontact.contact.search.TagCriteria;
 import com.mycontact.contact.command.UpdateContactNameCommand;
 import com.mycontact.user.command.Command;
 import com.mycontact.user.command.RemoteControl;
@@ -228,6 +232,7 @@ public class MyContactsApp {
         System.out.println("4. Edit Contact");
         System.out.println("5. Delete Contact");
         System.out.println("6. Bulk Operations");
+        System.out.println("7. Search Contacts");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -250,6 +255,9 @@ public class MyContactsApp {
                 break;
             case 6:
                 bulkOperations(scanner, user);
+                break;
+            case 7:
+                searchContacts(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -401,6 +409,54 @@ public class MyContactsApp {
                 break;
             default:
                 System.out.println("Invalid option.");
+        }
+    }
+
+    private static void searchContacts(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("\n--- Search Contacts ---");
+        System.out.println("Search by:");
+        System.out.println("1. Name");
+        System.out.println("2. Phone");
+        System.out.println("3. Email");
+        System.out.println("4. Tag");
+        System.out.print("Choose an option: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        SearchCriteria criteria;
+        System.out.print("Enter search query: ");
+        String query = scanner.nextLine();
+
+        switch (choice) {
+            case 1:
+                criteria = new NameCriteria(query);
+                break;
+            case 2:
+                criteria = new PhoneCriteria(query);
+                break;
+            case 3:
+                criteria = new EmailCriteria(query);
+                break;
+            case 4:
+                criteria = new TagCriteria(query);
+                break;
+            default:
+                System.out.println("Invalid option.");
+                return;
+        }
+
+        List<Contact> results = ContactSearchService.search(contacts, criteria);
+        if (results.isEmpty()) {
+            System.out.println("No contacts matched your search.");
+        } else {
+            System.out.println("\n--- Search Results ---");
+            results.forEach(c -> System.out.println(c.getName() + " (" + c.getId() + ")"));
         }
     }
 
