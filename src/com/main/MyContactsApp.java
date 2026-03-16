@@ -2,27 +2,25 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 09:  Search Contacts
-
+ * * Use Case 09: Search Contacts
+ * * Use Case 10: Advanced Filtering
  * * Description:
- * This class demonstrates viewing, editing, deleting, and performing bulk
- * operations on contact details for logged-in users using OOP concepts,
- * design patterns, and Java features.
+ * This class demonstrates viewing, editing, deleting, performing bulk
+ * operations, and applying advanced filters to contact details for logged-in
+ * users using OOP concepts, design patterns, and Java features.
  * * At this stage, the application:
  * - Allows logged-in users to select and view detailed contact information
  * - Uses Decorator Pattern for display formatting
  * - Uses immutable ContactView objects for read-only access
- * - Allows users to edit contact data with undo support
- * - Uses Command Pattern and Memento Pattern for state preservation
- * - Allows users to delete contacts with confirmation and notification
  * - Supports bulk operations (batch delete, export) using streams and predicates
+ * - Supports advanced filtering (tag, date added, frequently contacted)
  * - Validates input before updating or deleting contact state
  * * This maps Getter methods, toString() override for display formatting,
  * Decorator Pattern, String formatting, Optional for nullable fields,
  * immutable view objects, Command Pattern, Memento Pattern, Observer Pattern,
- * and Streams API for bulk operations.
+ * Streams API, and functional filtering.
  * * @author Developer
- * @version 9.0
+ * @version 10.0
  */
 
 package com.main;
@@ -50,6 +48,10 @@ import com.mycontact.contact.model.ContactView;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
 import com.mycontact.contact.observer.ContactDeletionObserver;
+import com.mycontact.contact.filter.DateAddedFilter;
+import com.mycontact.contact.filter.Filter;
+import com.mycontact.contact.filter.FrequentContactFilter;
+import com.mycontact.contact.filter.TagFilter;
 import com.mycontact.contact.search.ContactSearchService;
 import com.mycontact.contact.search.EmailCriteria;
 import com.mycontact.contact.search.NameCriteria;
@@ -233,6 +235,7 @@ public class MyContactsApp {
         System.out.println("5. Delete Contact");
         System.out.println("6. Bulk Operations");
         System.out.println("7. Search Contacts");
+        System.out.println("8. Advanced Filtering");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -258,6 +261,9 @@ public class MyContactsApp {
                 break;
             case 7:
                 searchContacts(scanner, user);
+                break;
+            case 8:
+                advancedFiltering(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -457,6 +463,68 @@ public class MyContactsApp {
         } else {
             System.out.println("\n--- Search Results ---");
             results.forEach(c -> System.out.println(c.getName() + " (" + c.getId() + ")"));
+        }
+    }
+
+    private static void advancedFiltering(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("\n--- Advanced Filtering ---");
+        System.out.println("1. Filter by Tag");
+        System.out.println("2. Filter by Date Added");
+        System.out.println("3. Filter by Frequently Contacted");
+        System.out.println("4. Combine Filters (Tag + Date)");
+        System.out.print("Choose an option: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        Filter filter;
+        switch (choice) {
+            case 1:
+                System.out.print("Enter tag to filter by: ");
+                String tag = scanner.nextLine();
+                filter = new TagFilter(tag);
+                break;
+            case 2:
+                System.out.print("Enter start date (yyyy-MM-dd) or leave blank: ");
+                String start = scanner.nextLine();
+                System.out.print("Enter end date (yyyy-MM-dd) or leave blank: ");
+                String end = scanner.nextLine();
+                LocalDateTime from = start.trim().isEmpty() ? null : LocalDateTime.parse(start.trim() + "T00:00:00");
+                LocalDateTime to = end.trim().isEmpty() ? null : LocalDateTime.parse(end.trim() + "T23:59:59");
+                filter = new DateAddedFilter(from, to);
+                break;
+            case 3:
+                System.out.print("Minimum number of phone numbers to be considered frequent: ");
+                int minPhones = Integer.parseInt(scanner.nextLine());
+                filter = new FrequentContactFilter(minPhones);
+                break;
+            case 4:
+                System.out.print("Enter tag to filter by: ");
+                String combinedTag = scanner.nextLine();
+                System.out.print("Enter start date (yyyy-MM-dd) or leave blank: ");
+                String combinedStart = scanner.nextLine();
+                System.out.print("Enter end date (yyyy-MM-dd) or leave blank: ");
+                String combinedEnd = scanner.nextLine();
+                LocalDateTime combinedFrom = combinedStart.trim().isEmpty() ? null : LocalDateTime.parse(combinedStart.trim() + "T00:00:00");
+                LocalDateTime combinedTo = combinedEnd.trim().isEmpty() ? null : LocalDateTime.parse(combinedEnd.trim() + "T23:59:59");
+                filter = new TagFilter(combinedTag).and(new DateAddedFilter(combinedFrom, combinedTo));
+                break;
+            default:
+                System.out.println("Invalid option.");
+                return;
+        }
+
+        List<Contact> filtered = contacts.stream().filter(filter::matches).collect(Collectors.toList());
+        if (filtered.isEmpty()) {
+            System.out.println("No contacts matched the filter.");
+        } else {
+            System.out.println("\n--- Filtered Contacts ---");
+            filtered.forEach(c -> System.out.println(c.getName() + " (" + c.getId() + ")"));
         }
     }
 
