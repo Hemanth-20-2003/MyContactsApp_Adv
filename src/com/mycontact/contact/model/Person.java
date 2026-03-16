@@ -8,4 +8,13 @@ public class Person extends Contact {
     public Person(String name) throws IllegalArgumentException {
         super(name);
     }
+
+    protected Person(Person other) {
+        super(other);
+    }
+
+    @Override
+    public Contact copy() {
+        return new Person(this);
+    }
 }

@@ -3,22 +3,22 @@
  * MAIN CLASS - MyContactsApp
  * =====================================================================
  * * Use Case 05: View Contact Details
+ * * Use Case 06: Edit Contact
  * * Description:
- * This class demonstrates viewing contact details by allowing logged-in users
- * to view complete information of a specific contact using OOP concepts,
- * Decorator Pattern, and Java features.
+ * This class demonstrates viewing and editing contact details for logged-in
+ * users using OOP concepts, design patterns, and Java features.
  * * At this stage, the application:
  * - Allows logged-in users to select and view detailed contact information
- * - Uses Decorator Pattern for adding display formatters
- * - Provides formatted display with String formatting
+ * - Uses Decorator Pattern for display formatting
  * - Uses immutable ContactView objects for read-only access
- * - Handles nullable fields gracefully
- * - Provides user-friendly contact selection
+ * - Allows users to edit contact data with undo support
+ * - Uses Command Pattern and Memento Pattern for state preservation
+ * - Validates input before updating contact state
  * * This maps Getter methods, toString() override for display formatting,
- * Decorator Pattern for adding display formatters, String formatting,
- * Optional for nullable fields, immutable view objects.
+ * Decorator Pattern, String formatting, Optional for nullable fields,
+ * immutable view objects, Command Pattern, and Memento Pattern.
  * * @author Developer
- * @version 5.0
+ * @version 6.0
  */
 
 package com.main;
@@ -30,11 +30,13 @@ import java.util.Scanner;
 import com.mycontact.auth.Authentication;
 import com.mycontact.auth.session.SessionManager;
 import com.mycontact.auth.strategy.BasicAuth;
+import com.mycontact.contact.decorator.DetailedContactDisplay;
 import com.mycontact.contact.factory.ContactFactory;
 import com.mycontact.contact.model.Contact;
 import com.mycontact.contact.model.ContactView;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
+import com.mycontact.contact.command.UpdateContactNameCommand;
 import com.mycontact.user.command.Command;
 import com.mycontact.user.command.RemoteControl;
 import com.mycontact.user.command.UpdateEmailCommand;
@@ -208,6 +210,7 @@ public class MyContactsApp {
         System.out.println("1. View All Contacts");
         System.out.println("2. View Contact Details");
         System.out.println("3. Add Contact");
+        System.out.println("4. Edit Contact");
         System.out.print("Choose an option: ");
         int choice = scanner.nextInt();
         scanner.nextLine(); // consume newline
@@ -221,6 +224,9 @@ public class MyContactsApp {
                 break;
             case 3:
                 addContact(scanner, user);
+                break;
+            case 4:
+                editContact(scanner, user);
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -246,12 +252,61 @@ public class MyContactsApp {
             Contact selectedContact = contacts.get(index);
             ContactView contactView = new ContactView(selectedContact);
 
-            // Use Decorator for display
-            com.mycontact.contact.decorator.DetailedContactDisplay display =
-                new com.mycontact.contact.decorator.DetailedContactDisplay(selectedContact);
+            // Show a safe, read-only snapshot of the contact
+            System.out.println("\n--- Contact Snapshot ---");
+            System.out.println("Name: " + contactView.getName());
+            System.out.println("ID: " + contactView.getId());
+
+            // Use Decorator for detailed display formatting
+            DetailedContactDisplay display = new DetailedContactDisplay(selectedContact);
             System.out.println(display.display());
         } else {
             System.out.println("Invalid contact number.");
+        }
+    }
+
+    private static void editContact(Scanner scanner, User user) {
+        List<Contact> contacts = user.getContacts();
+        if (contacts.isEmpty()) {
+            System.out.println("No contacts available.");
+            return;
+        }
+
+        System.out.println("Select a contact to edit:");
+        for (int i = 0; i < contacts.size(); i++) {
+            System.out.println((i + 1) + ". " + contacts.get(i).getName());
+        }
+        System.out.print("Enter contact number: ");
+        int index = scanner.nextInt() - 1;
+        scanner.nextLine(); // consume newline
+
+        if (index < 0 || index >= contacts.size()) {
+            System.out.println("Invalid contact number.");
+            return;
+        }
+
+        Contact selected = contacts.get(index);
+        RemoteControl remote = new RemoteControl();
+
+        System.out.println("\n--- Edit Contact ---");
+        System.out.println("1. Change Name");
+        System.out.print("Choose an option: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        if (choice == 1) {
+            System.out.print("Enter new contact name: ");
+            String newName = scanner.nextLine();
+            UpdateContactNameCommand nameCommand = new UpdateContactNameCommand(selected, newName);
+            remote.execute(nameCommand);
+
+            System.out.print("Undo this change? (y/n): ");
+            String undo = scanner.nextLine();
+            if (undo.equalsIgnoreCase("y")) {
+                remote.undo(nameCommand);
+            }
+        } else {
+            System.out.println("Invalid option.");
         }
     }
 

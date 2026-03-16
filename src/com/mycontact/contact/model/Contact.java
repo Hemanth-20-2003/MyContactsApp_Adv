@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.mycontact.contact.model.Email;
+import com.mycontact.contact.model.PhoneNumber;
 
 /**
  * Abstract base class for contacts.
@@ -29,6 +31,64 @@ public abstract class Contact {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
+
+    /**
+     * Copy constructor for creating modified versions of a Contact.
+     * Performs a deep copy of the contact's state.
+     * @param other the contact to copy
+     */
+    protected Contact(Contact other) {
+        this.id = other.id;
+        this.name = other.name;
+        this.createdAt = other.createdAt;
+        this.updatedAt = other.updatedAt;
+        this.phoneNumbers = new ArrayList<>();
+        other.phoneNumbers.forEach(phone -> this.phoneNumbers.add(new PhoneNumber(phone.getNumber(), phone.getLabel())));
+        this.emails = new ArrayList<>();
+        other.emails.forEach(email -> this.emails.add(new Email(email.getAddress(), email.getLabel())));
+    }
+
+    /**
+     * Creates a memento representing the current state.
+     * @return a memento that can be used to restore state
+     */
+    public Memento createMemento() {
+        return new Memento(copy());
+    }
+
+    /**
+     * Restores the contact state from a memento.
+     * @param memento the memento to restore from
+     */
+    public void restore(Memento memento) {
+        Contact snapshot = memento.getSnapshot();
+        this.name = snapshot.name;
+        this.phoneNumbers = snapshot.phoneNumbers;
+        this.emails = snapshot.emails;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Memento object for storing contact state.
+     */
+    public static class Memento {
+        private final Contact snapshot;
+
+        private Memento(Contact snapshot) {
+            this.snapshot = snapshot;
+        }
+
+        private Contact getSnapshot() {
+            return snapshot;
+        }
+    }
+
+    /**
+     * Performs a deep copy of this contact.
+     * Concrete subclasses must implement this to return the correct type.
+     * @return a new Contact instance with the same state
+     */
+    public abstract Contact copy();
 
     public UUID getId() {
         return id;
