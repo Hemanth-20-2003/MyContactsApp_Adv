@@ -18,7 +18,7 @@ public class TagCriteria implements SearchCriteria {
             return false;
         }
         return contact.getTags().stream()
-            .filter(t -> t != null)
-            .anyMatch(t -> t.toLowerCase().contains(tag));
+            .filter(t -> t != null && t.getName() != null)
+            .anyMatch(t -> t.getName().toLowerCase().contains(tag));
     }
 }

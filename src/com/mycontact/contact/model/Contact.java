@@ -2,10 +2,13 @@ package com.mycontact.contact.model;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import com.mycontact.contact.model.Email;
 import com.mycontact.contact.model.PhoneNumber;
+import com.mycontact.contact.tag.Tag;
 
 /**
  * Abstract base class for contacts.
@@ -17,7 +20,7 @@ public abstract class Contact {
     private String name;
     private List<PhoneNumber> phoneNumbers;
     private List<Email> emails;
-    private List<String> tags;
+    private Set<Tag> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -29,7 +32,7 @@ public abstract class Contact {
         this.name = name;
         this.phoneNumbers = new ArrayList<>();
         this.emails = new ArrayList<>();
-        this.tags = new ArrayList<>();
+        this.tags = new HashSet<>();
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -48,7 +51,7 @@ public abstract class Contact {
         other.phoneNumbers.forEach(phone -> this.phoneNumbers.add(new PhoneNumber(phone.getNumber(), phone.getLabel())));
         this.emails = new ArrayList<>();
         other.emails.forEach(email -> this.emails.add(new Email(email.getAddress(), email.getLabel())));
-        this.tags = new ArrayList<>(other.tags);
+        this.tags = new HashSet<>(other.tags);
     }
 
     /**
@@ -138,25 +141,21 @@ public abstract class Contact {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public List<String> getTags() {
-        return new ArrayList<>(tags); // Defensive copy
+    public Set<Tag> getTags() {
+        return new HashSet<>(tags); // Defensive copy
     }
 
-    public void addTag(String tag) {
-        if (tag != null && !tag.trim().isEmpty()) {
+    public void addTag(Tag tag) {
+        if (tag != null) {
             this.tags.add(tag);
             this.updatedAt = LocalDateTime.now();
         }
     }
 
-    public void removeTag(String tag) {
+    public void removeTag(Tag tag) {
         this.tags.remove(tag);
         this.updatedAt = LocalDateTime.now();
     }
-
-    
-
-   
 
     public void clearTags() {
         this.tags.clear();

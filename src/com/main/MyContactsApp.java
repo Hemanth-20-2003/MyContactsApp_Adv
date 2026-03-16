@@ -2,25 +2,25 @@
  * =====================================================================
  * MAIN CLASS - MyContactsApp
  * =====================================================================
- * * Use Case 09: Search Contacts
- * * Use Case 10: Advanced Filtering
+ * * Use Case 11: Create and Manage Tags
  * * Description:
- * This class demonstrates viewing, editing, deleting, performing bulk
- * operations, and applying advanced filters to contact details for logged-in
- * users using OOP concepts, design patterns, and Java features.
+ * This class demonstrates viewing, editing, deleting, searching, filtering,
+ * and tagging contact details for logged-in users using OOP concepts, design
+ * patterns, and Java features.
  * * At this stage, the application:
  * - Allows logged-in users to select and view detailed contact information
  * - Uses Decorator Pattern for display formatting
  * - Uses immutable ContactView objects for read-only access
  * - Supports bulk operations (batch delete, export) using streams and predicates
  * - Supports advanced filtering (tag, date added, frequently contacted)
+ * - Provides tag creation and management with unique tag instances
  * - Validates input before updating or deleting contact state
  * * This maps Getter methods, toString() override for display formatting,
  * Decorator Pattern, String formatting, Optional for nullable fields,
  * immutable view objects, Command Pattern, Memento Pattern, Observer Pattern,
- * Streams API, and functional filtering.
+ * Streams API, functional filtering, and Flyweight Pattern for tags.
  * * @author Developer
- * @version 10.0
+ * @version 11.0
  */
 
 package com.main;

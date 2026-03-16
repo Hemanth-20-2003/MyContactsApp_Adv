@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import com.mycontact.contact.model.Contact;
 import com.mycontact.contact.observer.ContactDeletionObserver;
+import com.mycontact.contact.tag.Tag;
 import com.mycontact.user.builder.UserBuilder;
 
 public abstract class User {
@@ -202,7 +203,8 @@ public abstract class User {
         if (tag == null || tag.trim().isEmpty()) {
             return;
         }
-        contactsToTag.forEach(contact -> contact.addTag(tag));
+        Tag tagObj = Tag.of(tag);
+        contactsToTag.forEach(contact -> contact.addTag(tagObj));
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.mycontact.contact.filter;
 
 import com.mycontact.contact.model.Contact;
+import com.mycontact.contact.tag.Tag;
 
 /**
  * Filters contacts by tags (case-insensitive).
@@ -18,7 +19,7 @@ public class TagFilter implements Filter {
             return false;
         }
         return contact.getTags().stream()
-            .filter(t -> t != null)
-            .anyMatch(t -> t.toLowerCase().contains(tag));
+            .filter(t -> t != null && t.getName() != null)
+            .anyMatch(t -> t.getName().toLowerCase().contains(tag));
     }
 }
